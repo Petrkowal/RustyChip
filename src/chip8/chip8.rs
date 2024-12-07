@@ -48,8 +48,7 @@ impl ChipSettings {
     fn fix_size(size: (u32, u32)) -> (u32, u32) {
         match (size.0, size.1) {
             (0, 0) => {
-                log::warn!("Width and height are both 0, how do you expect to see anything?");
-                (0, 0)
+                (640, 320)
             }
             (width, height) if width != 0 && height != 0 => {
                 if width / height != 2 {

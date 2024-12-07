@@ -4,7 +4,7 @@ use clap::Parser;
 use std::ptr::NonNull;
 
 #[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
+#[command(about, long_about = None)]
 struct Args {
     /// ROM file to load
     #[clap(short, long)]
@@ -14,7 +14,7 @@ struct Args {
     #[clap(short, long)]
     width: Option<u32>,
 
-    ///  Window size in pixels, default = 320. It's enough to set only one of the dimensions, the other will be calculated automatically.If not set to multiples of 32, it will be rounded down.
+    ///  Window size in pixels, default = 320. It's enough to set only one of the dimensions, the other will be calculated automatically. If not set to multiples of 32, it will be rounded down.
     #[clap(long)]
     height: Option<u32>,
 
@@ -31,7 +31,7 @@ struct Args {
     cpu_clock: u32,
 
     /// Timers rate (Hz). CPU to timers rate should be 500/60
-    #[clap(short, long)]
+    #[clap(long)]
     timers_rate: Option<u32>,
 }
 
