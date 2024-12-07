@@ -5,3 +5,4 @@ pub mod io;
 pub mod ram;
 pub mod util;
 pub use chip8::Chip8;
+pub use chip8::ChipSettings;
