@@ -23,11 +23,7 @@ pub struct IRegisterMarker;
 pub struct PCRegisterMarker;
 
 pub type VRegister = Register<VRegisterMarker, Byte>;
-pub type IRegister = Register<IRegisterMarker, Address>;
-pub type PCRegister = Register<PCRegisterMarker, Address>;
 pub type VRegisterNumber = usize;
-pub type IRegisterNumber = usize;
-pub type PCRegisterNumber = usize;
 
 impl<T, V: Default> Register<T, V> {
     pub fn new(index: usize) -> Self {
@@ -38,22 +34,8 @@ impl<T, V: Default> Register<T, V> {
         }
     }
 
-    pub fn index(&self) -> usize {
-        self.index
-    }
-
     pub fn value(&self) -> &V {
         &self.value
-    }
-}
-
-impl Register<VRegisterMarker, Byte> {
-    pub fn increment(&mut self) {
-        self.value.0 = self.value.0.wrapping_add(1);
-    }
-
-    pub fn decrement(&mut self) {
-        self.value.0 = self.value.0.wrapping_sub(1);
     }
 }
 
@@ -64,10 +46,6 @@ impl Register<PCRegisterMarker, Address> {
 
     pub fn jump(&mut self, address: Address) {
         self.value = address;
-    }
-
-    pub fn as_usize(&self) -> usize {
-        self.value.0 as usize
     }
 }
 

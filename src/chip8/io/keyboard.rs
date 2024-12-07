@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-pub type Keybinds = HashMap<raylib::consts::KeyboardKey, Key>;
+pub type Keybindings = HashMap<raylib::consts::KeyboardKey, Key>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Key {
@@ -24,39 +24,43 @@ pub enum Key {
 
 #[derive(Debug, Clone)]
 pub struct Keyboard {
-    keybinds: Keybinds,
+    keybindings: Keybindings,
     keys: [bool; 16],
 }
 
 impl Keyboard {
-    pub fn new() -> Keyboard {
-        let mut keybinds = HashMap::new();
-        keybinds.insert(raylib::consts::KeyboardKey::KEY_ONE, Key::Key1);
-        keybinds.insert(raylib::consts::KeyboardKey::KEY_TWO, Key::Key2);
-        keybinds.insert(raylib::consts::KeyboardKey::KEY_THREE, Key::Key3);
-        keybinds.insert(raylib::consts::KeyboardKey::KEY_FOUR, Key::KeyC);
-        keybinds.insert(raylib::consts::KeyboardKey::KEY_Q, Key::Key4);
-        keybinds.insert(raylib::consts::KeyboardKey::KEY_W, Key::Key5);
-        keybinds.insert(raylib::consts::KeyboardKey::KEY_E, Key::Key6);
-        keybinds.insert(raylib::consts::KeyboardKey::KEY_R, Key::KeyD);
-        keybinds.insert(raylib::consts::KeyboardKey::KEY_A, Key::Key7);
-        keybinds.insert(raylib::consts::KeyboardKey::KEY_S, Key::Key8);
-        keybinds.insert(raylib::consts::KeyboardKey::KEY_D, Key::Key9);
-        keybinds.insert(raylib::consts::KeyboardKey::KEY_F, Key::KeyE);
-        keybinds.insert(raylib::consts::KeyboardKey::KEY_Z, Key::KeyA);
-        keybinds.insert(raylib::consts::KeyboardKey::KEY_X, Key::Key0);
-        keybinds.insert(raylib::consts::KeyboardKey::KEY_C, Key::KeyB);
-        keybinds.insert(raylib::consts::KeyboardKey::KEY_V, Key::KeyF);
+    pub fn new(swap_yz: bool) -> Keyboard {
+        let mut keybindings = HashMap::new();
+        keybindings.insert(raylib::consts::KeyboardKey::KEY_ONE, Key::Key1);
+        keybindings.insert(raylib::consts::KeyboardKey::KEY_TWO, Key::Key2);
+        keybindings.insert(raylib::consts::KeyboardKey::KEY_THREE, Key::Key3);
+        keybindings.insert(raylib::consts::KeyboardKey::KEY_FOUR, Key::KeyC);
+        keybindings.insert(raylib::consts::KeyboardKey::KEY_Q, Key::Key4);
+        keybindings.insert(raylib::consts::KeyboardKey::KEY_W, Key::Key5);
+        keybindings.insert(raylib::consts::KeyboardKey::KEY_E, Key::Key6);
+        keybindings.insert(raylib::consts::KeyboardKey::KEY_R, Key::KeyD);
+        keybindings.insert(raylib::consts::KeyboardKey::KEY_A, Key::Key7);
+        keybindings.insert(raylib::consts::KeyboardKey::KEY_S, Key::Key8);
+        keybindings.insert(raylib::consts::KeyboardKey::KEY_D, Key::Key9);
+        keybindings.insert(raylib::consts::KeyboardKey::KEY_F, Key::KeyE);
+        if swap_yz {
+            keybindings.insert(raylib::consts::KeyboardKey::KEY_Y, Key::KeyA);
+        } else {
+            keybindings.insert(raylib::consts::KeyboardKey::KEY_Z, Key::KeyA);
+        }
+        keybindings.insert(raylib::consts::KeyboardKey::KEY_X, Key::Key0);
+        keybindings.insert(raylib::consts::KeyboardKey::KEY_C, Key::KeyB);
+        keybindings.insert(raylib::consts::KeyboardKey::KEY_V, Key::KeyF);
 
         Keyboard {
-            keybinds,
+            keybindings,
             keys: [false; 16],
         }
     }
 
-    pub fn new_with_keybinds(keybinds: Keybinds) -> Keyboard {
+    pub fn new_with_keybindings(keybindings: Keybindings) -> Keyboard {
         Keyboard {
-            keybinds,
+            keybindings,
             keys: [false; 16],
         }
     }
@@ -66,7 +70,7 @@ impl Keyboard {
     }
 
     pub fn press_key(&mut self, key: raylib::consts::KeyboardKey) {
-        if let Some(chip8_key) = self.keybinds.get(&key) {
+        if let Some(chip8_key) = self.keybindings.get(&key) {
             match chip8_key {
                 Key::Key0 => self.keys[0] = true,
                 Key::Key1 => self.keys[1] = true,
@@ -89,7 +93,7 @@ impl Keyboard {
     }
 
     pub fn release_key(&mut self, key: raylib::consts::KeyboardKey) {
-        if let Some(chip8_key) = self.keybinds.get(&key) {
+        if let Some(chip8_key) = self.keybindings.get(&key) {
             match chip8_key {
                 Key::Key0 => self.keys[0] = false,
                 Key::Key1 => self.keys[1] = false,
@@ -110,9 +114,8 @@ impl Keyboard {
             }
         }
     }
-    
-    pub fn get_raylib_keys(&self) -> Vec<raylib::consts::KeyboardKey> {
-        self.keybinds.keys().cloned().collect()
-    }
 
+    pub fn get_raylib_keys(&self) -> Vec<raylib::consts::KeyboardKey> {
+        self.keybindings.keys().cloned().collect()
+    }
 }

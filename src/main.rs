@@ -1,7 +1,6 @@
 mod chip8;
 
 use clap::Parser;
-use std::ptr::NonNull;
 
 #[derive(Parser, Debug)]
 #[command(about, long_about = None)]
@@ -33,6 +32,10 @@ struct Args {
     /// Timers rate (Hz). CPU to timers rate should be 500/60
     #[clap(long)]
     timers_rate: Option<u32>,
+    
+    /// Swap Y and Z keys
+    #[clap(short = 'z', long)]
+    swap_yz: bool,
 }
 
 fn args_to_settings(args: Args) -> chip8::ChipSettings {
@@ -91,7 +94,7 @@ fn args_to_settings(args: Args) -> chip8::ChipSettings {
         }
     };
 
-    chip8::ChipSettings::new(rom, size, cpu_rate, timers_rate, (fg_color, bg_color), beep)
+    chip8::ChipSettings::new(rom, size, cpu_rate, timers_rate, (fg_color, bg_color), args.swap_yz, beep)
 }
 
 // 6377

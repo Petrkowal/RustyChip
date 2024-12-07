@@ -49,6 +49,7 @@ Options:
   -b, --bg-color <BG_COLOR>        Background color. Default = inverse of fg_color
   -c, --cpu-clock <CPU_CLOCK>      CPU Clock speed (Hz) [default: 500]
       --timers-rate <TIMERS_RATE>  Timers rate (Hz). CPU to timers rate should be 500/60
+  -z, --swap-yz                    Swap Y and Z keys
   -h, --help                       Print help
 ```
 

@@ -1,14 +1,13 @@
-use crate::chip8::datatypes::datatypes::*;
-use crate::chip8::io::display::Display;
 use crate::chip8::cpu::instruction::Instruction;
-use crate::chip8::io::keyboard::Keyboard;
-use crate::chip8::ram::Ram;
 use crate::chip8::cpu::registers::*;
 use crate::chip8::cpu::stack::Stack;
 use crate::chip8::cpu::timers::Timers;
+use crate::chip8::datatypes::datatypes::*;
+use crate::chip8::io::display::Display;
+use crate::chip8::io::keyboard::Keyboard;
+use crate::chip8::ram::Ram;
 use crate::chip8::util::util::*;
 use std::cell::RefCell;
-use std::ops::Add;
 use std::rc::Rc;
 
 const REGISTER_COUNT: usize = 16;
@@ -30,7 +29,11 @@ pub struct Cpu {
 }
 
 impl Cpu {
-    pub fn new(display: Rc<RefCell<Display>>, ram: Rc<RefCell<Ram>>, keyboard: Rc<RefCell<Keyboard>>) -> Cpu {
+    pub fn new(
+        display: Rc<RefCell<Display>>,
+        ram: Rc<RefCell<Ram>>,
+        keyboard: Rc<RefCell<Keyboard>>,
+    ) -> Cpu {
         let registers = [Register::new(0); REGISTER_COUNT];
         let i = Register::new(0);
         let stack = Stack::new();
@@ -56,17 +59,17 @@ impl Cpu {
                 let opcode = self.fetch();
                 let instruction = self.decode(opcode);
                 self.execute(instruction);
-            },
+            }
             State::WaitingForKey(instruction) => {
                 self.execute(instruction);
-            },
+            }
         }
     }
 
     pub fn update_timers(&mut self) {
-        self.timers.update();
+        self.timers.decrement();
     }
-    
+
     pub fn should_beep(&self) -> bool {
         self.timers.get_sound_timer() > 0
     }
@@ -283,13 +286,13 @@ impl Cpu {
             }
             Instruction::SHR(reg1, reg2) => {
                 let digit = self.registers[reg1].value().as_u8() & 0x1;
-                let value;
-                if true { // Chip-8
-                    value = self.registers[reg2].value().as_u8() >> 1; // Reg 1 or reg 2? Wtf
-                }
-                else { // Chip-48
-                    value = self.registers[reg1].value().as_u8() >> 1;
-                }
+                let value: u8 = if true {
+                    // Chip-8
+                    self.registers[reg2].value().as_u8() >> 1 // Reg 1 or reg 2? Aaaaaaaa
+                } else {
+                    // Chip-48
+                    self.registers[reg1].value().as_u8() >> 1
+                };
                 self.registers[reg1].load(Byte(value));
                 if digit == 1 {
                     self.set_vf();
@@ -314,13 +317,13 @@ impl Cpu {
             }
             Instruction::SHL(reg1, reg2) => {
                 let digit = self.registers[reg1].value().as_u8() >> 7;
-                let value;
-                if true { // Chip-8
-                    value = self.registers[reg2].value().as_u8() << 1;
-                }
-                else { // Chip-48
-                    value = self.registers[reg1].value().as_u8() << 1;
-                }
+                let value: u8 = if true {
+                    // Chip-8
+                    self.registers[reg2].value().as_u8() << 1
+                } else {
+                    // Chip-48
+                    self.registers[reg1].value().as_u8() << 1
+                };
                 self.registers[reg1].load(Byte(value));
                 if digit == 1 {
                     self.set_vf();
@@ -337,13 +340,13 @@ impl Cpu {
                 self.i.load(addr);
             }
             Instruction::JPVX(reg, addr) => {
-                let jmp_addr;
-                if true { // Chip-8
-                    jmp_addr = Address(addr.0 + self.registers[0].value().as_u8() as u16);
-                }
-                else { // Super chip-48
-                    jmp_addr = Address(addr.0 + self.registers[reg].value().as_u8() as u16);
-                }
+                let jmp_addr = if true {
+                    // Chip-8
+                    Address(addr.0 + self.registers[0].value().as_u8() as u16)
+                } else {
+                    // Super chip-48
+                    Address(addr.0 + self.registers[reg].value().as_u8() as u16)
+                };
                 self.pc.jump(jmp_addr);
             }
             Instruction::RND(reg, byte) => {
@@ -395,10 +398,9 @@ impl Cpu {
                 self.registers[reg].load(Byte(self.timers.get_delay_timer()));
             }
             Instruction::LDK(reg) => {
-
-                let kboard = self.keyboard.borrow();
+                let board = self.keyboard.borrow();
                 for i in 0..16 {
-                    if kboard.is_pressed(i) {
+                    if board.is_pressed(i) {
                         self.registers[reg].load(Byte(i));
                         self.state = State::Running;
                         return;

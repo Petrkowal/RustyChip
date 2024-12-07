@@ -24,13 +24,13 @@ impl Display {
         self.display = [0; 64 * 32];
     }
 
-    pub fn set_pixel(&mut self, x: usize, y: usize) {
-        self.display[x + y * 64] = 1;
-    }
+    // pub fn set_pixel(&mut self, x: usize, y: usize) {
+    //     self.display[x + y * 64] = 1;
+    // }
 
-    pub fn unset_pixel(&mut self, x: usize, y: usize) {
-        self.display[x + y * 64] = 0;
-    }
+    // pub fn unset_pixel(&mut self, x: usize, y: usize) {
+    //     self.display[x + y * 64] = 0;
+    // }
 
     pub fn get_pixel(&self, x: usize, y: usize) -> u8 {
         self.display[x + y * 64]

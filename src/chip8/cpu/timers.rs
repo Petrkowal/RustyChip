@@ -4,23 +4,7 @@ pub struct Timers {
     sound_timer: u8,
 }
 
-impl Timers {
-    pub fn new() -> Timers {
-        Timers {
-            delay_timer: 0,
-            sound_timer: 0,
-        }
-    }
-    
-    pub fn update(&mut self) {
-        if self.delay_timer > 0 {
-            self.delay_timer -= 1;
-        }
-        if self.sound_timer > 0 {
-            self.sound_timer -= 1;
-        }
-    }
-}
+
 
 impl Default for Timers {
     fn default() -> Timers {
@@ -29,6 +13,13 @@ impl Default for Timers {
 }
 
 impl Timers {
+    pub fn new() -> Timers {
+        Timers {
+            delay_timer: 0,
+            sound_timer: 0,
+        }
+    }
+    
     pub fn get_delay_timer(&self) -> u8 {
         self.delay_timer
     }

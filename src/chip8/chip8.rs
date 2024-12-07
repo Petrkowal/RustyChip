@@ -2,7 +2,6 @@ use crate::chip8::cpu::Cpu;
 use crate::chip8::io::display::Display;
 use crate::chip8::io::keyboard::Keyboard;
 use crate::chip8::ram::Ram;
-use log::log;
 use raylib::prelude::RaylibDraw;
 use std::cell::RefCell;
 use std::cmp::min;
@@ -15,6 +14,7 @@ pub struct ChipSettings {
     cpu_rate: u64,
     timers_rate: u64,
     colors: (u32, u32),
+    swap_yz: bool,
     beep: bool,
 }
 
@@ -25,6 +25,7 @@ impl ChipSettings {
         cpu_rate: u64,
         timers_rate: u64,
         colors: (u32, u32),
+        swap_yz: bool,
         beep: bool,
     ) -> ChipSettings {
         let size = ChipSettings::fix_size(size);
@@ -41,6 +42,7 @@ impl ChipSettings {
             cpu_rate,
             timers_rate,
             colors,
+            swap_yz,
             beep,
         }
     }
@@ -93,7 +95,7 @@ pub struct Chip8 {
 impl Chip8 {
     pub fn new(settings: ChipSettings) -> Chip8 {
         let display = Rc::new(RefCell::new(Display::new()));
-        let keyboard = Rc::new(RefCell::new(Keyboard::new()));
+        let keyboard = Rc::new(RefCell::new(Keyboard::new(settings.swap_yz)));
         let ram = Rc::new(RefCell::new(Ram::new()));
         ram.borrow_mut().load_rom(settings.rom.as_str());
 
@@ -139,8 +141,7 @@ impl Chip8 {
                     min(
                         next_time_to_cycle.duration_since(std::time::Instant::now()),
                         next_time_to_timer.duration_since(std::time::Instant::now()),
-                    )
-                    .into(),
+                    ),
                 );
             }
             if std::time::Instant::now() >= next_time_to_cycle {

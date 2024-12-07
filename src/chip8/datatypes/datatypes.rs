@@ -1,19 +1,15 @@
-use std::ops::{Add, Sub};
+use std::ops::Add;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Byte(pub u8);
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Address(pub u16);
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Nibble(pub u8);
 
 impl Byte {
-    pub fn new(value: u8) -> Byte {
-        Byte(value)
-    }
-
     pub fn as_u8(self) -> u8 {
         self.0
     }
@@ -26,7 +22,7 @@ impl Byte {
         if let Some(result) = self.0.checked_add(rhs.0) {
             Ok(Byte(result))
         } else {
-            Err(Byte((self.0.wrapping_add(rhs.0)) & 0xFF))
+            Err(Byte(self.0.wrapping_add(rhs.0)))
         }
     }
     
@@ -34,16 +30,10 @@ impl Byte {
         if let Some(result) = self.0.checked_sub(rhs.0) {
             Ok(Byte(result))
         } else {
-            Err(Byte((self.0.wrapping_sub(rhs.0)) & 0xFF))
+            Err(Byte(self.0.wrapping_sub(rhs.0)))
         }
     }
     
-}
-
-impl Default for Byte {
-    fn default() -> Byte {
-        Byte(0)
-    }
 }
 
 impl Address {
@@ -64,26 +54,11 @@ impl Address {
     }
 }
 
-impl Default for Address {
-    fn default() -> Address {
-        Address(0)
-    }
-}
-
 impl Nibble {
-    pub fn new(value: u8) -> Nibble {
-        Nibble(value & 0xF)
-    }
 
-    pub fn as_u8(self) -> u8 {
-        self.0 & 0xF
-    }
-}
-
-impl Default for Nibble {
-    fn default() -> Nibble {
-        Nibble(0)
-    }
+    // pub fn as_u8(self) -> u8 {
+    //     self.0 & 0xF
+    // }
 }
 
 
