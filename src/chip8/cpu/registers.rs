@@ -1,4 +1,4 @@
-use crate::datatypes::datatypes::*;
+use crate::chip8::datatypes::datatypes::{Address, Byte};
 
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

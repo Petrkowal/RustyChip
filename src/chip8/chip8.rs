@@ -1,7 +1,7 @@
-use crate::cpu::Cpu;
-use crate::display::Display;
-use crate::keyboard::Keyboard;
-use crate::ram::Ram;
+use crate::chip8::cpu::Cpu;
+use crate::chip8::io::display::Display;
+use crate::chip8::io::keyboard::Keyboard;
+use crate::chip8::ram::Ram;
 use raylib::prelude::RaylibDraw;
 use std::cell::RefCell;
 use std::cmp::min;

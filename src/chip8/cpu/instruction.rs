@@ -1,5 +1,5 @@
-use crate::datatypes::datatypes::*;
-use crate::registers::*;
+use crate::chip8::datatypes::datatypes::*;
+use crate::chip8::cpu::registers::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Instruction {

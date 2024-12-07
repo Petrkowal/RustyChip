@@ -1,8 +1,3 @@
-use std::fs::File;
-use std::io::Read;
-use crate::datatypes::datatypes::{Address, Byte};
-use crate::ram::Ram;
-
 pub fn get_hex_digit(opcode: u16, position: u8, amount: u8) -> u16 {
     if position < 0 || amount <= 0 || position + amount > 4 {
         panic!("Invalid position or amount");

@@ -1,5 +1,5 @@
-use crate::datatypes::datatypes::*;
-use crate::digits::Digits;
+use crate::chip8::datatypes::datatypes::*;
+use crate::chip8::io::digits::Digits;
 use std::fs::File;
 use std::io::Read;
 

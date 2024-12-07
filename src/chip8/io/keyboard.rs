@@ -1,9 +1,6 @@
 use std::collections::HashMap;
 
-// keybinds - raylib key code to chip8 key
-
 pub type Keybinds = HashMap<raylib::consts::KeyboardKey, Key>;
-
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Key {

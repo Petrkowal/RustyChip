@@ -1,4 +1,4 @@
-use crate::datatypes::datatypes::*;
+use crate::chip8::datatypes::datatypes::*;
 
 
 const STACK_SIZE: usize = 16;
