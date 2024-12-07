@@ -1,14 +1,32 @@
 use crate::datatypes::datatypes::*;
+use crate::digits::Digits;
+use std::fs::File;
+use std::io::Read;
 
 const MEMORY_SIZE: usize = 4096;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Ram {
     memory: [Byte; MEMORY_SIZE],
 }
 
 impl Ram {
     pub fn new() -> Ram {
-        Ram {
+        let mut ram: Ram = Ram {
             memory: [Byte(0); MEMORY_SIZE],
+        };
+
+        Ram::load_font(&mut ram);
+
+        ram
+    }
+
+    fn load_font(ram: &mut Ram) {
+        for i in 0..16 {
+            let sprite = Digits::sprite(&Digits::from_usize(i));
+            for j in 0..5 {
+                ram.load(Address(0x50 + i as u16 * 5 + j as u16), Byte(sprite[j]));
+            }
         }
     }
 
@@ -30,5 +48,15 @@ impl Ram {
         let first = self.memory[address.as_usize()];
         let second = self.memory[address.as_usize() + 1];
         (first, second)
+    }
+
+    pub fn load_rom(&mut self, rom_path: &str) {
+        let mut file = File::open(rom_path).expect("Failed to open file");
+        let mut buffer: Vec<u8> = Vec::new();
+        file.read_to_end(&mut buffer).expect("Failed to read file");
+
+        for i in 0..buffer.len() {
+            self.load(Address(0x200 + i as u16), Byte(buffer[i]));
+        }
     }
 }

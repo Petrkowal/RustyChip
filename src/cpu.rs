@@ -1,57 +1,88 @@
-use std::ops::Add;
 use crate::datatypes::datatypes::*;
 use crate::display::Display;
 use crate::instruction::*;
+use crate::keyboard::Keyboard;
 use crate::ram::Ram;
 use crate::registers::*;
 use crate::stack::Stack;
 use crate::timers::Timers;
 use crate::util::*;
+use std::cell::RefCell;
+use std::ops::Add;
+use std::rc::Rc;
 
 const REGISTER_COUNT: usize = 16;
 
-pub(crate) struct Cpu {
-    registers: [Register<VRegisterMarker, Byte>; REGISTER_COUNT],
+enum State {
+    Running,
+    WaitingForKey(Instruction),
+}
+pub struct Cpu {
+    registers: [Register<VRegisterMarker, Byte>; 16],
     i: Register<IRegisterMarker, Address>,
     stack: Stack,
-    ram: Ram,
     pc: Register<PCRegisterMarker, Address>,
-    vf: Register<FRegisterMarker, Byte>,
     timers: Timers,
-    display: Display,
+    display: Rc<RefCell<Display>>,
+    ram: Rc<RefCell<Ram>>,
+    keyboard: Rc<RefCell<Keyboard>>,
+    state: State,
 }
 
 impl Cpu {
-    pub(crate) fn new(ram: Ram) -> Cpu {
-        let registers: [Register<VRegisterMarker, Byte>; 16] = [Register::new(0); 16];
+    pub fn new(display: Rc<RefCell<Display>>, ram: Rc<RefCell<Ram>>, keyboard: Rc<RefCell<Keyboard>>) -> Cpu {
+        let registers = [Register::new(0); REGISTER_COUNT];
         let i = Register::new(0);
         let stack = Stack::new();
-        let pc = Register::new(0);
-        let vf = Register::new(0);
+        let mut pc = Register::new(0);
+        pc.jump(Address(0x200));
         let timers = Timers::new();
-        let display = Display::new();
         Cpu {
             registers,
             i,
             stack,
-            ram,
             pc,
-            vf,
             timers,
             display,
+            ram,
+            keyboard,
+            state: State::Running,
         }
     }
-    
+
     pub fn cycle(&mut self) {
-        let opcode = self.fetch();
-        let instruction = self.decode(opcode);
-        self.execute(instruction);
+        match self.state {
+            State::Running => {
+                let opcode = self.fetch();
+                let instruction = self.decode(opcode);
+                self.execute(instruction);
+            },
+            State::WaitingForKey(instruction) => {
+                self.execute(instruction);
+            },
+        }
+    }
+
+    pub fn update_timers(&mut self) {
+        self.timers.update();
+    }
+    
+    pub fn should_beep(&self) -> bool {
+        self.timers.get_sound_timer() > 0
     }
 
     fn fetch(&mut self) -> u16 {
-        let word = self.ram.read_word(self.pc.value());
+        let word = self.ram.borrow().read_word(self.pc.value());
         self.pc.increment();
         word
+    }
+
+    fn set_vf(&mut self) {
+        self.registers[0xF].load(Byte(1));
+    }
+
+    fn unset_vf(&mut self) {
+        self.registers[0xF].load(Byte(0));
     }
 
     fn decode(&mut self, opcode: u16) -> Instruction {
@@ -107,8 +138,12 @@ impl Cpu {
                 let reg2 = get_hex_digit_usize(opcode, 2, 1);
                 Instruction::SNEV(reg1, reg2)
             }
-            0xA000..=0xAFFF => Instruction::LDI(Address::new(Address::mask(opcode))),
-            0xB000..=0xBFFF => Instruction::JPV0(Address::new(Address::mask(opcode))),
+            0xA000..=0xAFFF => Instruction::LDI(Address::new(opcode)),
+            0xB000..=0xBFFF => {
+                let reg = get_hex_digit_usize(opcode, 1, 1);
+                let addr = Address::new(Address::mask(opcode));
+                Instruction::JPVX(reg, addr)
+            }
             0xC000..=0xCFFF => {
                 let reg = get_hex_digit_usize(opcode, 1, 1);
                 let val = get_hex_digit_u8(opcode, 2, 2);
@@ -153,7 +188,7 @@ impl Cpu {
                 self.pc.jump(addr);
             }
             Instruction::CLS => {
-                self.display.clear();
+                self.display.borrow_mut().clear();
             }
             Instruction::RET => {
                 let addr = self.stack.pop().expect("Stack underflow");
@@ -187,41 +222,49 @@ impl Cpu {
             Instruction::ADD(reg, byte) => match self.registers[reg].value().add(byte) {
                 Ok(value) => {
                     self.registers[reg].load(value);
-                    self.vf.set();
+                    self.set_vf();
                 }
                 Err(value) => {
                     self.registers[reg].load(value);
-                    self.vf.unset();
+                    self.unset_vf();
                 }
             },
             Instruction::LDV(reg1, reg2) => {
-                let value = self.registers[reg2].value();
-                self.registers[reg1].load(*value);
+                let value = *self.registers[reg2].value();
+                self.registers[reg1].load(value);
             }
             Instruction::OR(reg1, reg2) => {
                 let value =
                     self.registers[reg1].value().as_u8() | self.registers[reg2].value().as_u8();
                 self.registers[reg1].load(Byte(value));
+                self.unset_vf();
             }
             Instruction::AND(reg1, reg2) => {
                 let value =
                     self.registers[reg1].value().as_u8() & self.registers[reg2].value().as_u8();
                 self.registers[reg1].load(Byte(value));
+                self.unset_vf();
             }
             Instruction::XOR(reg1, reg2) => {
                 let value =
                     self.registers[reg1].value().as_u8() ^ self.registers[reg2].value().as_u8();
                 self.registers[reg1].load(Byte(value));
+                self.unset_vf();
             }
             Instruction::ADDV(reg1, reg2) => {
-                let value =
-                    self.registers[reg1].value().as_u8() + self.registers[reg2].value().as_u8();
-                self.registers[reg1].load(Byte(value));
-                if value > 0xFF {
-                    self.vf.set();
-                } else {
-                    self.vf.unset();
-                };
+                let res = self.registers[reg1]
+                    .value()
+                    .add(*self.registers[reg2].value());
+                match res {
+                    Ok(value) => {
+                        self.registers[reg1].load(value);
+                        self.unset_vf();
+                    }
+                    Err(value) => {
+                        self.registers[reg1].load(value);
+                        self.set_vf();
+                    }
+                }
             }
             Instruction::SUB(reg1, reg2) => {
                 let res = self.registers[reg1]
@@ -230,22 +273,29 @@ impl Cpu {
                 match res {
                     Ok(value) => {
                         self.registers[reg1].load(value);
-                        self.vf.set();
+                        self.set_vf();
                     }
                     Err(value) => {
                         self.registers[reg1].load(value);
-                        self.vf.unset();
+                        self.unset_vf();
                     }
                 }
             }
             Instruction::SHR(reg1, reg2) => {
-                if self.registers[reg1].value().as_u8() & 0x1 == 1 {
-                    self.vf.set();
-                } else {
-                    self.vf.unset();
+                let digit = self.registers[reg1].value().as_u8() & 0x1;
+                let value;
+                if true { // Chip-8
+                    value = self.registers[reg2].value().as_u8() >> 1; // Reg 1 or reg 2? Wtf
                 }
-                let value = self.registers[reg2].value().as_u8() >> 1;
+                else { // Chip-48
+                    value = self.registers[reg1].value().as_u8() >> 1;
+                }
                 self.registers[reg1].load(Byte(value));
+                if digit == 1 {
+                    self.set_vf();
+                } else {
+                    self.unset_vf();
+                }
             }
             Instruction::SUBN(reg1, reg2) => {
                 let res = self.registers[reg2]
@@ -254,22 +304,29 @@ impl Cpu {
                 match res {
                     Ok(value) => {
                         self.registers[reg1].load(value);
-                        self.vf.set();
+                        self.set_vf();
                     }
                     Err(value) => {
                         self.registers[reg1].load(value);
-                        self.vf.unset();
+                        self.unset_vf();
                     }
                 }
             }
             Instruction::SHL(reg1, reg2) => {
-                if self.registers[reg1].value().as_u8() & 0x80 == 1 {
-                    self.vf.set();
-                } else {
-                    self.vf.unset();
+                let digit = self.registers[reg1].value().as_u8() >> 7;
+                let value;
+                if true { // Chip-8
+                    value = self.registers[reg2].value().as_u8() << 1;
                 }
-                let value = self.registers[reg2].value().as_u8() << 1;
+                else { // Chip-48
+                    value = self.registers[reg1].value().as_u8() << 1;
+                }
                 self.registers[reg1].load(Byte(value));
+                if digit == 1 {
+                    self.set_vf();
+                } else {
+                    self.unset_vf();
+                }
             }
             Instruction::SNEV(reg1, reg2) => {
                 if self.registers[reg1].value() != self.registers[reg2].value() {
@@ -279,9 +336,15 @@ impl Cpu {
             Instruction::LDI(addr) => {
                 self.i.load(addr);
             }
-            Instruction::JPV0(addr) => {
-                let jump_to = addr.as_u16() + self.registers[0].value().as_u8() as u16;
-                self.pc.jump(Address::new(jump_to));
+            Instruction::JPVX(reg, addr) => {
+                let jmp_addr;
+                if true { // Chip-8
+                    jmp_addr = Address(addr.0 + self.registers[0].value().as_u8() as u16);
+                }
+                else { // Super chip-48
+                    jmp_addr = Address(addr.0 + self.registers[reg].value().as_u8() as u16);
+                }
+                self.pc.jump(jmp_addr);
             }
             Instruction::RND(reg, byte) => {
                 let random_byte = rand::random::<u8>();
@@ -289,36 +352,60 @@ impl Cpu {
                 self.registers[reg].load(Byte(value));
             }
             Instruction::DRW(reg1, reg2, nibble) => {
-                // TODO: Check if it works
                 let x = self.registers[reg1].value().as_usize();
                 let y = self.registers[reg2].value().as_usize();
+                let n = nibble.0 as usize;
 
-                let mut sprites = vec![0; nibble.0 as usize];
-                for i in 0..nibble.0 {
-                    let sprite = self.ram.read(self.i.value() + i);
-                    sprites[i as usize] = sprite.as_u8();
+                let mut sprites: Vec<Byte> = Vec::new();
+                for i in 0..n {
+                    sprites.push(self.ram.borrow().read(self.i.value() + i));
                 }
-                let collision = self.display.draw_sprite(x, y, &sprites);
-                if collision != 0 {
-                    self.vf.set();
+
+                let mut collision = false;
+                let sprites: &[u8] = &sprites.iter().map(|byte| byte.0).collect::<Vec<u8>>();
+                if self.display.borrow_mut().draw_sprite(x, y, sprites) != 0 {
+                    collision = true;
+                }
+
+                if collision {
+                    self.set_vf();
                 } else {
-                    self.vf.unset();
+                    self.unset_vf();
                 }
             }
             Instruction::SKP(reg) => {
-                // TODO: Skip if key is pressed
-                unimplemented!("SKP instruction not implemented");
+                if self
+                    .keyboard
+                    .borrow()
+                    .is_pressed(self.registers[reg].value().as_u8())
+                {
+                    self.pc.increment();
+                }
             }
             Instruction::SKNP(reg) => {
-                // TODO: Skip if key is not pressed
-                unimplemented!("SKNP instruction not implemented");
+                if !self
+                    .keyboard
+                    .borrow()
+                    .is_pressed(self.registers[reg].value().as_u8())
+                {
+                    self.pc.increment();
+                }
             }
             Instruction::LDDT(reg) => {
                 self.registers[reg].load(Byte(self.timers.get_delay_timer()));
             }
             Instruction::LDK(reg) => {
-                // TODO: Wait for keypress, store in reg
-                unimplemented!("LDK instruction not implemented");
+
+                let kboard = self.keyboard.borrow();
+                for i in 0..16 {
+                    if kboard.is_pressed(i) {
+                        self.registers[reg].load(Byte(i));
+                        self.state = State::Running;
+                        return;
+                    }
+                }
+
+                self.state = State::WaitingForKey(Instruction::LDK(reg));
             }
             Instruction::LDDTV(reg) => {
                 let val = self.registers[reg].value();
@@ -333,24 +420,29 @@ impl Cpu {
                 self.i.load(Address::new(addr));
             }
             Instruction::LDF(reg) => {
-                // TODO: I = location of sprite for digit Vx
-                unimplemented!("LDF instruction not implemented");
+                let digit = self.registers[reg].value().as_u8();
+                let addr = Address(0x50 + digit as u16 * 5);
+                self.i.load(addr);
             }
             Instruction::LDB(reg) => {
                 let value = self.registers[reg].value().as_u8();
                 let bcd = [Byte(value / 100), Byte((value / 10) % 10), Byte(value % 10)];
                 for (i, &byte) in bcd.iter().enumerate() {
-                    self.ram.load(self.i.value() + i, byte);
+                    self.ram.borrow_mut().load(self.i.value() + i, byte);
                 }
             }
             Instruction::LDIV(reg) => {
                 for i in 0..=reg {
-                    self.ram.load(self.i.value() + i, *self.registers[i].value());
+                    self.ram
+                        .borrow_mut()
+                        .load(*self.i.value(), *self.registers[i].value());
+                    self.i.increment();
                 }
             }
             Instruction::LDVI(reg) => {
                 for i in 0..=reg {
-                    self.registers[i].load(self.ram.read(self.i.value() + i));
+                    self.registers[i].load(self.ram.borrow().read(*self.i.value()));
+                    self.i.increment();
                 }
             }
             // Super chip-48 instructions

@@ -21,18 +21,13 @@ pub struct VRegisterMarker;
 pub struct IRegisterMarker;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PCRegisterMarker;
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct FRegisterMarker;
 
 pub type VRegister = Register<VRegisterMarker, Byte>;
 pub type IRegister = Register<IRegisterMarker, Address>;
 pub type PCRegister = Register<PCRegisterMarker, Address>;
-pub type FRegister = Register<FRegisterMarker, Byte>;
-
 pub type VRegisterNumber = usize;
 pub type IRegisterNumber = usize;
 pub type PCRegisterNumber = usize;
-pub type FRegisterNumber = usize;
 
 impl<T, V: Default> Register<T, V> {
     pub fn new(index: usize) -> Self {
@@ -85,17 +80,6 @@ impl Register<IRegisterMarker, Address> {
         self.value = address;
     }
 }
-
-impl Register<FRegisterMarker, Byte> {
-    pub fn set(&mut self) {
-        self.value = Byte(1);
-    }
-
-    pub fn unset(&mut self) {
-        self.value = Byte(0);
-    }
-}
-
 
 impl Loadable for VRegister {
     type Value = Byte;

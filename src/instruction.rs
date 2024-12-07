@@ -1,6 +1,7 @@
 use crate::datatypes::datatypes::*;
 use crate::registers::*;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Instruction {
     SYS(Address),                                  // 0nnn - SYS addr
     CLS,                                           // 00E0 - CLS
@@ -23,7 +24,7 @@ pub enum Instruction {
     SHL(VRegisterNumber, VRegisterNumber),         // 8xyE - SHL Vx {, Vy}
     SNEV(VRegisterNumber, VRegisterNumber),        // 9xy0 - SNE Vx, Vy
     LDI(Address),                                  // Annn - LD I, addr
-    JPV0(Address),                                 // Bnnn - JP V0, addr
+    JPVX(VRegisterNumber, Address),                // Bnnn - JP V0, addr
     RND(VRegisterNumber, Byte),                    // Cxkk - RND Vx, byte
     DRW(VRegisterNumber, VRegisterNumber, Nibble), // Dxyn - DRW Vx, Vy, nibble
     SKP(VRegisterNumber),                          // Ex9E - SKP Vx

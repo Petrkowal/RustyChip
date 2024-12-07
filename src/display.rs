@@ -1,5 +1,6 @@
 
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Display {
     display: [u8; 64 * 32],
 }
@@ -41,20 +42,27 @@ impl Display {
 
     pub fn draw_sprite(&mut self, x: usize, y: usize, sprite: &[u8]) -> u8 {
         let mut collision = 0;
+        let x = x % 64;
+        let y = y % 32;
         for (j, &sprite_byte) in sprite.iter().enumerate() {
             for i in 0..8 {
                 let sprite_pixel = (sprite_byte >> (7 - i)) & 1;
-                let x = (x + i) % 64;
-                let y = (y + j) % 32;
+                let x = x + i;
+                let y = y + j;
+                if x >= 64 || y >= 32 {
+                    continue;
+                }
                 let pixel = self.get_pixel(x, y);
                 collision |= pixel & sprite_pixel;
                 self.display[x + y * 64] ^= sprite_pixel;
             }
         }
+
         collision
     }
 
-    pub fn draw_sprite_at(&mut self, x: usize, y: usize, sprite: &[u8]) -> u8 {
-        self.draw_sprite(x, y, sprite)
+    pub fn get_display_as_bytes(&self) -> Vec<u8> {
+        self.display.to_vec()
     }
+
 }
