@@ -38,9 +38,9 @@ struct Args {
 fn args_to_settings(args: Args) -> chip8::ChipSettings {
     let size: (u32, u32) = match (args.width, args.height) {
         (Some(width), Some(height)) => (width, height),
-        (Some(width), None) => (width, width / 2),
-        (None, Some(height)) => (height * 2, height),
-        (None, None) => (640, 320),
+        (Some(width), None) => (width, 0),
+        (None, Some(height)) => (0, height),
+        (None, None) => (0, 0),
     };
     let fg_color = u32::from_str_radix(&args.fg_color[2..], 16).expect("Invalid foreground color");
     let bg_color = match args.bg_color {
