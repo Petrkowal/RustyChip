@@ -1,7 +1,7 @@
 # RustyChip
 
 This is a simple Chip8 emulator written in Rust for my VSB-TUO Rust course.\
-Runs basic Chip-8 programs. Chip-48 and SuperChip roms will be implemented later.
+Runs basic Chip-8 programs. Chip-48 and SuperChip roms will be implemented later.\
 
 ## Features
 
@@ -15,6 +15,7 @@ Runs basic Chip-8 programs. Chip-48 and SuperChip roms will be implemented later
 - [ ] Chip-48 and SuperChip support
 - [ ] Keybindings configuration
 - [ ] Sound
+- [ ] Args improvements
 
 ## Usage
 
